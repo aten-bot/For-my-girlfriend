@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Special Adventure</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* --- Basic Setup --- */
+*{box-sizing:border-box;}
+body {
+  background: linear-gradient(rgba(180, 210, 255, 0.6), rgba(180, 210, 255, 0.6)),
+              url('upscalemedia-transformed.png') no-repeat center center fixed;
+  background-size: cover;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+#game-container {
+  width:95%;
+  max-width:900px;
+  border:6px solid #f2d4c0;
+  background: rgba(74, 59, 79, 0.9);
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 0 20px #f2d4c0,inset 0 0 15px #2c1b22;
+  transition:transform 0.1s ease;
+}
+
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:4px solid #f2d4c0;
+  padding-bottom:15px;
+  margin-bottom:20px;
+}
+header h1 {
+  font-size:1.2rem;
+  margin:0;
+  color:#ffc2a3;
+  text-shadow:2px 2px #c97b69;
+}
+#hp-bar {display:flex;gap:5px;}
+.heart{width:10px;height:10px;background:transparent;position:relative;animation:pulse 1.5s infinite;}
+.heart.full{box-shadow:10px 0 #e04f5f,20px 0 #e04f5f,0 10px #e04f5f,30px 10px #e04f5f,0 20px #e04f5f,30px 20px #e04f5f,10px 30px #e04f5f,20px 30px #e04f5f;}
+.heart.empty{box-shadow:10px 0 #555,20px 0 #555,0 10px #555,30px 10px #555,0 20px #555,30px 20px #555,10px 30px #555,20px 30px #555;}
+@keyframes pulse{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}
+
+/* Character area */
+#main-screen{display:flex;gap:30px;}
+#character-area{flex-basis:20%;display:flex;align-items:center;justify-content:center;}
+#character{
+  width:64px;
+  height:64px;
+  image-rendering:pixelated;
+  transform:scale(3);
+  margin-bottom:20px;
+  animation:character-idle 4s ease-in-out infinite;
+}
+@keyframes character-idle{
+  0%{transform:scale(3) translateY(0);}
+  50%{transform:scale(3) translateY(-8px);}
+  100%{transform:scale(3) translateY(0);}
+}
+
+/* Door grid */
+#door-grid{flex-basis:80%;display:grid;grid-template-columns:repeat(5,1fr);gap:15px;}
+.door{
+  aspect-ratio:2/3;
+  background:#8b4513;
+  border:4px solid #5a2d0c;
+  border-radius:4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.5rem;
+  color:#f2d4c0;
+  text-shadow:2px 2px #5a2d0c;
+  cursor:pointer;
+  position:relative;
+  transition:all 0.2s ease;
+}
+.door::after{content:'';position:absolute;width:8px;height:8px;background:#ffd700;border-radius:50%;border:2px solid #b8860b;right:12%;top:45%;}
+.door:not(.locked):not(.completed):hover{transform:scale(1.05);background:#a0522d;box-shadow:0 0 15px #f2d4c0;}
+.door.completed{background:#52475a;border-color:#2c1b22;color:#7d7185;text-shadow:none;cursor:not-allowed;}
+.door.completed::after{background:#555;border-color:#333;}
+.door.final{background:#4a3b4f;border:4px solid #f2d4c0;color:#f2d4c0;text-shadow:2px 2px #c97b69;}
+.door.final.locked{color:#7d7185;cursor:not-allowed;}
+.door.final.completed{background:#52475a;}
+
+/* Modals */
+.modal{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(44,27,34,0.95);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+  padding:20px;
+  visibility:hidden;
+  opacity:0;
+  transition:opacity 0.3s ease,visibility 0.3s ease;
+}
+.modal.active{visibility:visible;opacity:1;}
+.modal-content{
+  background:#4a3b4f;
+  border:6px solid #f2d4c0;
+  border-radius:12px;
+  padding:30px;
+  width:90%;
+  max-width:600px;
+  text-align:center;
+  line-height:1.6;
+  box-shadow:0 0 20px #f2d4c0;
+}
+.modal-content h2{
+  font-size:1.5rem;
+  color:#ffc2a3;
+  text-shadow:2px 2px #c97b69;
+  margin-top:0;
+}
+#puzzle-options{display:flex;flex-direction:column;gap:15px;margin-top:25px;}
+.btn{
+  font-family:'Press Start 2P',cursive;
+  background:#8b4513;
+  border:4px solid #5a2d0c;
+  color:#f2d4c0;
+  padding:15px;
+  font-size:0.9rem;
+  cursor:pointer;
+  border-radius:8px;
+  transition:all 0.2s ease;
+  text-shadow:2px 2px #5a2d0c;
+}
+.btn:hover{background:#a0522d;transform:translateY(-2px);box-shadow:0 4px 0 #5a2d0c;}
+.btn.start-btn{background:#5c8b45;border-color:#3a5a2d;color:#d4f2c0;font-size:1.2rem;}
+.btn.start-btn:hover{background:#7ca05d;box-shadow:0 4px 0 #3a5a2d;}
+
+#message-toast{
+  position:fixed;
+  bottom:-100px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#e04f5f;
+  border:4px solid #f2d4c0;
+  color:#fff;
+  padding:15px 25px;
+  border-radius:8px;
+  font-size:0.9rem;
+  z-index:200;
+  text-shadow:2px 2px #8b2c37;
+  transition:bottom 0.5s ease-in-out;
+}
+#message-toast.show{bottom:30px;}
+.shake{animation:shake 0.4s;}
+@keyframes shake{
+  0%{transform:translateX(0);}
+  25%{transform:translateX(-10px) rotate(-2deg);}
+  50%{transform:translateX(10px) rotate(2deg);}
+  75%{transform:translateX(-10px) rotate(-2deg);}
+  100%{transform:translateX(0) rotate(0);}
+}
+
+/* fade-in animation for final letter */
+@keyframes fadeInText {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeInText 2s ease forwards;
+}
+</style>
+</head>
+<body>
+<!-- Start Modal -->
+<div class="modal active" id="start-modal">
+  <div class="modal-content">
+    <h2>A Special Adventure</h2>
+    <p>Are you ready for your birthday quest?</p>
+    <button class="btn start-btn" id="start-button">Start Game</button>
+  </div>
+</div>
+
+<!-- Game Container -->
+<div id="game-container">
+  <header>
+    <h1 id="game-title">...A's Birthday Quest...</h1>
+    <div id="hp-bar"></div>
+  </header>
+  <main id="main-screen">
+    <div id="character-area">
+      <img id="character" src="download.gif" alt="Little girl character">
+    </div>
+    <div id="door-grid"></div>
+  </main>
+</div>
+
+<!-- Puzzle Modal -->
+<div class="modal" id="puzzle-modal">
+  <div class="modal-content">
+    <h2 id="puzzle-question">Puzzle Question</h2>
+    <div id="puzzle-options"></div>
+  </div>
+</div>
+
+<!-- Letter Modal -->
+<div class="modal" id="letter-modal">
+  <div class="modal-content fade-in">
+    <h2>You did it! 🎉</h2>
+    <p>Here's my letter:</p>
+    <div id="final-letter-content" style="margin-top:15px; font-size:13px; line-height:1.8; color:#fff;"></div>
+    <button class="btn" id="close-letter-btn" style="margin-top:20px;">I love you!</button>
+  </div>
+</div>
+
+<!-- Game Over Modal -->
+<div class="modal" id="game-over-modal">
+  <div class="modal-content">
+    <h2>Game Over...</h2>
+    <p id="game-over-message"></p>
+    <button class="btn" id="restart-btn" style="margin-top:20px;">Try Again</button>
+  </div>
+</div>
+
+<div id="message-toast"></div>
+
+<!-- Audio -->
+<audio id="background-music" loop><source src="background_music.mp3" type="audio/mpeg"></audio>
+<audio id="sfx-correct" src="sfx_correct.wav"></audio>
+<audio id="sfx-wrong" src="sfx_wrong.wav"></audio>
+<audio id="sfx-open" src="sfx_open.wav"></audio>
+
+<script>
+window.addEventListener('DOMContentLoaded', ()=>{
+
+const gameData = {
+gameTitle:"Nomio's Birthday Quest",
+maxHP:5,
+puzzles:[
+{question:"Хэзээ хоёулаа анх үерхсэн бэ?",options:["Jan 1","Jun 14","Jun 22","Jun 7"],answer:1},
+{question:"Хамгийн анх ямар газар хоолонд орсон бэ?",options:["Korean Restaurant ","Arig","Berlin зоог","Lottery"],answer:2},
+{question:"Хамгийн анх кино театрт үзсэн кино?",options:["Inside out","Inda house","Хүлээх өрөө","Jujutsu kaison"],answer:0},
+{question:"Хоёулангийхан дуртай хоол? ",options:["Төмсний нухаш","Банштай цай","Цуйван","Шарсан тахиа"],answer:3},
+{question:"Хамт байхдаа хийх дуртай үйлдэл?",options:["Тэврээд хэвтэх","Унгах","Гижигдэх","Зүгээр л суух хха"],answer:0},
+{question:"Ирээдүйд аялахыг хүсдэг газар?",options:["Shanghai","America","Egypt","Africa"],answer:0},
+{question:"Биднийг илэрхийлэх дуу?",options:["Choijoo chamd uldeey","Bayartsengel Hairiin duu","A-Sound - Chin Zurhnii Hair","Egshiglen - 2x2=5"],answer:2},
+{question:"Ирээдүйд хүүхэддээ өгч болох нэр?",options:["Анхзаяа","Чинцэцэг","Дөлгөөн","Энхлэн"],answer:3},
+{question:"Ирээдүйд амьдрахыг хүсдэг газар?",options:["Japan","Mongolia","Australia","Korea"],answer:1},
+{question:"Насаараа ганц хоол ид гэвэл аль нь вэ?",options:["Taco","Spice noodle","Soup with kimchi","Burger"],answer:3}],
+finalLetter: `
+  <p>Happy Birthday, my love!💖</p>
+  <p>Миний хөөрхөн хайр 10 хаалга нээж чадлаа баяр хүрье💖 Миний хайр наанаа хөгшрөөд байна шүү гэхгүй юу тоголсон шүү хайраа💖</p>
+  <p>Хайртайгаа хамт нас нэмээд 80 хүрнэ шүү хоёулаа💖 Миний хайр нь ажил хийгээд шалгалтаа өгөөд ёстой мундаг шүү 💖 </p>
+  <p>Хайраараа дөндөө их бахархдаг шүү💖хайраа хайртайгаа хамт аз жаргалтай болон гунигтай мөчүүдээ хуваалцдагт баярлалаа💖</p>
+  <p>Хоёуланг нь цаашдаа зөндөө олон адал явдал гоё гоё зүйл хүлээж байгаа шүү💖</p>
+  <p>I love you endlessly. 💖</p>
+`,
+gameOverMessage: `My Dearest Nomio,
+Happy Birthday!`
+};
+
+let currentHP = gameData.maxHP;
+let doorsCompleted = Array(10).fill(false);
+let currentPuzzleId = null;
+
+const startModal=document.getElementById('start-modal');
+const startButton=document.getElementById('start-button');
+const gameContainer=document.getElementById('game-container');
+const gameTitleElem=document.getElementById('game-title');
+const hpBar=document.getElementById('hp-bar');
+const doorGrid=document.getElementById('door-grid');
+const puzzleModal=document.getElementById('puzzle-modal');
+const puzzleQuestion=document.getElementById('puzzle-question');
+const puzzleOptions=document.getElementById('puzzle-options');
+const letterModal=document.getElementById('letter-modal');
+const finalLetterContent=document.getElementById('final-letter-content');
+const gameOverModal=document.getElementById('game-over-modal');
+const gameOverMessage=document.getElementById('game-over-message');
+const restartBtn=document.getElementById('restart-btn');
+const messageToast=document.getElementById('message-toast');
+
+const bgMusic=document.getElementById('background-music');
+const sfxCorrect=document.getElementById('sfx-correct');
+const sfxWrong=document.getElementById('sfx-wrong');
+const sfxOpen=document.getElementById('sfx-open');
+
+function startGame(){
+  gameContainer.style.visibility='visible';
+  startModal.classList.remove('active');
+  bgMusic.play().catch(()=>{});
+  gameTitleElem.textContent=gameData.gameTitle;
+  gameOverMessage.textContent=gameData.gameOverMessage;
+  updateHPDisplay();
+
+  for(let i=0;i<10;i++){
+    const door=document.createElement('div');
+    door.classList.add('door');
+    door.dataset.id=i+1;
+    door.textContent=i+1;
+    if(i===9){door.classList.add('final','locked');}
+    door.addEventListener('click',()=>onDoorClick(i+1));
+    doorGrid.appendChild(door);
+  }
+}
+
+function updateHPDisplay(){
+  hpBar.innerHTML='';
+  for(let i=0;i<gameData.maxHP;i++){
+    const heart=document.createElement('div');
+    heart.classList.add('heart',i<currentHP?'full':'empty');
+    hpBar.appendChild(heart);
+  }
+}
+
+function onDoorClick(id){
+  if(doorsCompleted[id-1])return;
+  if(id===10&&!doorsCompleted.slice(0,9).every(d=>d))return showToast("Complete all other doors first!");
+  sfxOpen.play();
+  currentPuzzleId=id;
+  showPuzzle(gameData.puzzles[id-1]);
+}
+
+function showPuzzle(puzzle){
+  puzzleQuestion.textContent=puzzle.question;
+  puzzleOptions.innerHTML='';
+  puzzle.options.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.classList.add('btn');btn.textContent=opt;
+    btn.addEventListener('click',()=>checkAnswer(i,puzzle.answer));
+    puzzleOptions.appendChild(btn);
+  });
+  puzzleModal.classList.add('active');
+}
+
+function hidePuzzle(){puzzleModal.classList.remove('active');}
+
+function checkAnswer(selected,correct){
+  hidePuzzle();
+  if(selected===correct){
+    sfxCorrect.play();
+    doorsCompleted[currentPuzzleId-1]=true;
+    document.querySelector(`.door[data-id='${currentPuzzleId}']`).classList.add('completed');
+    if(currentPuzzleId===10)showLetter();
+  }else{
+    sfxWrong.play();currentHP--;updateHPDisplay();shakeScreen();
+    if(currentHP<=0)showGameOver();
+  }
+}
+
+function showLetter(){
+  letterModal.classList.add('active');
+  bgMusic.pause();
+  finalLetterContent.innerHTML = gameData.finalLetter;
+}
+
+function showGameOver(){gameOverModal.classList.add('active');bgMusic.pause();}
+function showToast(msg){messageToast.textContent=msg;messageToast.classList.add('show');setTimeout(()=>{messageToast.classList.remove('show');},2000);}
+function shakeScreen(){gameContainer.classList.add('shake');setTimeout(()=>{gameContainer.classList.remove('shake');},400);}
+
+startButton.addEventListener('click',startGame);
+restartBtn.addEventListener('click',()=>window.location.reload());
+});
+</script>
+</body>
+</html>
